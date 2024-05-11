@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+
+# MIT license (c) 2024 https://github.com/slowpeek
+# Homepage: https://github.com/slowpeek/ifempty
+# About: Data protection wrapper for mkfs.X tools
+
+set -eu
+
+self=${BASH_SOURCE[0]}
+name=${self##*/}
+
+bye() {
+    printf '%s\n' "$1" >&2
+    exit 1
+}
+
+is_image() {
+    [[ $1 == *.@(bin|disk|img|part|raw) ]]
+}
+
+image_or_device() {
+    ! [[ -b $1 ]] || return 0
+
+    [[ -f $1 ]] || return 1
+    ! is_image "$1" || return 0
+    ! is_image "$(realpath "$1")" || return 0
+
+    return 1
+}
+
+readme() {
+  cat <<'EOF'
+
+This is a data protection wrapper for mkfs.X tools. Generally speaking, it can
+be used with any tool of calling signature 'tool [options] target' where the
+target is either a block device or some raw image file.
+
+Among mkfs.X tools there are "smart" and "dumb" ones.
+
+"Smart" tools check if the target contains something before doing anything. In
+the case, some tools ask for confirmation (e.g. mkfs.ext family), while others
+refuse to proceed (e.g. mkfs.xfs).
+
+"Dumb" tools just format the target without any checks (e.g. mkfs.fat).
+
+This script makes those "dumb" tools safer to use by emulating the "smart"
+behavior.
+
+Setup --
+
+- save the script as /usr/local/bin/ifempty and make it executable
+- check if /usr/local/sbin is in your PATH and overrides /usr/sbin
+- in /usr/local/sbin symlink names of "dumb" tools to /usr/local/bin/ifempty
+
+For example:
+
+> tree /usr/local/sbin
+/usr/local/sbin
+├── mkfs.exfat -> /usr/local/bin/ifempty
+├── mkfs.fat -> /usr/local/bin/ifempty
+├── mkfs.msdos -> /usr/local/bin/ifempty
+├── mkfs.ntfs -> /usr/local/bin/ifempty
+├── mkfs.udf -> /usr/local/bin/ifempty
+└── mkfs.vfat -> /usr/local/bin/ifempty
+
+Check what would the shell start when one runs mkfs.fat:
+
+> type mkfs.fat
+mkfs.fat is /usr/local/sbin/mkfs.fat
+
+So, with such setup, running mkfs.fat would start ifempty which checks the
+target before passing control to the original tool.
+
+Notice --
+
+Some mkfs.X tools accept one extra non-option argument: filesystem size. This
+script does not support that, it assumes the last agrument is the target.
+
+EOF
+
+  exit
+}
+
+(( $# )) || readme
+
+last=${*: -1}
+
+[[ -e "$last" ]] ||
+    bye "'${last}' does not exist"
+
+image_or_device "$last" ||
+    bye "'${last}' is not a block device or some raw image file"
+
+[[ -r "$last" ]] ||
+    bye "'${last}' is not readable, try running with sudo"
+
+msg=
+while IFS='=' read -r key val; do
+    case $key in
+        PTTYPE)
+            msg="'${last}' contains some ${val^^} partition table"
+            break ;;
+
+        TYPE)
+            msg="'${last}' contains some ${val^^} superblock"
+            break ;;
+    esac
+done < <(blkid -o export "$last")
+
+if [[ -n $msg ]]; then
+    # Just exit if not on terminal
+    [[ -t 0 ]] || bye "$msg"
+
+    printf '%s\n' "$msg"
+    read -r -p 'Proceed anyway? (y,N) ' yn
+    [[ ${yn,,} == y ]] || exit 1
+fi
+
+for dir in /usr/sbin /usr/bin /sbin /bin; do
+    path=$dir/$name
+
+    if [[ -e $path ]]; then
+        if [[ $self -ef $path ]]; then
+            # Prevent infinite loop
+            bye "'$path' is supposed to be run, but it is the same as '$self'"
+        fi
+
+        exec "$path" "${@:1}"
+    fi
+done
+
+bye "Cant find '${name}' executable in common places"
