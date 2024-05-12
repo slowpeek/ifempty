@@ -10,7 +10,7 @@ self=${BASH_SOURCE[0]}
 name=${self##*/}
 
 bye() {
-    printf '%s\n' "$1" >&2
+    printf 'ifempty: %s\n' "$1" >&2
     exit 1
 }
 
@@ -29,7 +29,7 @@ image_or_device() {
 }
 
 readme() {
-  cat <<'EOF'
+    cat <<'EOF'
 
 This is a data protection wrapper for mkfs.X tools. Generally speaking, it can
 be used with any tool of calling signature 'tool [options] target' where the
@@ -81,8 +81,27 @@ target before passing control to the original tool.
 
 EOF
 
-  exit
+    exit
 }
+
+tool=
+while read -r path; do
+    if [[ $self -ef $path ]]; then
+        # Skip this script
+        continue
+    fi
+
+    tool=$path
+    break
+done < <(type -a -p "$name")
+
+[[ -n $tool ]] ||
+    bye "Cant find other '${name}' executable in PATH"
+
+# Pass control to the original tool right away when not on a terminal. This idea
+# is borrowed from mkfs.ext family, which skips the target check on a terminal
+# (search for "isatty(0)" in mke2fs.c)
+[[ -t 0 && -t 1 ]] || exec "$tool" "$@"
 
 (( $# )) || readme
 
@@ -111,25 +130,9 @@ while IFS='=' read -r key val; do
 done < <(blkid -o export "$last")
 
 if [[ -n $msg ]]; then
-    # Just exit if not on terminal
-    [[ -t 0 ]] || bye "$msg"
-
     printf '%s\n' "$msg"
     read -r -p 'Proceed anyway? (y,N) ' yn
     [[ ${yn,,} == y ]] || exit 1
 fi
 
-for dir in /usr/sbin /usr/bin /sbin /bin; do
-    path=$dir/$name
-
-    if [[ -e $path ]]; then
-        if [[ $self -ef $path ]]; then
-            # Prevent infinite loop
-            bye "'$path' is supposed to be run, but it is the same as '$self'"
-        fi
-
-        exec "$path" "${@:1}"
-    fi
-done
-
-bye "Cant find '${name}' executable in common places"
+exec "$tool" "$@"
