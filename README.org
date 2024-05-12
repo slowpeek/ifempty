@@ -1,0 +1,53 @@
+* About
+
+This is a data protection wrapper for =mkfs.X= tools. Generally speaking, it can
+be used with any tool of calling signature =tool [options] target= where the
+target is either a block device or some raw image file.
+
+Among =mkfs.X= tools there are /smart/ and /dumb/ ones.
+
+/Smart/ tools check if the target contains something before doing anything. In
+the case, some tools ask for confirmation (e.g. =mkfs.ext= family), while others
+refuse to proceed (e.g. =mkfs.xfs=).
+
+/Dumb/ tools just format the target without any checks (e.g. =mkfs.fat=).
+
+This script makes those /dumb/ tools safer to use by emulating the /smart/
+behavior.
+
+*Notice*: Some =mkfs.X= tools accept an extra non-option argument: filesystem
+size. This script does not support that, it assumes the last agrument is the
+target.
+
+*Notice*: Some =mkfs.X= tools can create the fs starting at some offset
+(e.g. =mkfs.fat= with its =--offset= option). This script does not parse any
+options, it just assumes the last argument is the target as-is.
+
+* Setup
+
+- save the script as =/usr/local/bin/ifempty= and make it executable
+- check if =/usr/local/sbin= is in your =PATH= and overrides =/usr/sbin=
+- in =/usr/local/sbin= symlink names of /dumb/ tools to =/usr/local/bin/ifempty=
+
+* Example
+
+#+begin_example
+  > tree /usr/local/sbin
+  /usr/local/sbin
+  ├── mkfs.exfat -> /usr/local/bin/ifempty
+  ├── mkfs.fat -> /usr/local/bin/ifempty
+  ├── mkfs.msdos -> /usr/local/bin/ifempty
+  ├── mkfs.ntfs -> /usr/local/bin/ifempty
+  ├── mkfs.udf -> /usr/local/bin/ifempty
+  └── mkfs.vfat -> /usr/local/bin/ifempty
+#+end_example
+
+Check what would the shell start when one runs =mkfs.fat=:
+
+#+begin_example
+  > command -v mkfs.fat
+  /usr/local/sbin/mkfs.fat
+#+end_example
+
+So, with such setup, running =mkfs.fat= would start =ifempty= which checks the
+target before passing control to the original tool.

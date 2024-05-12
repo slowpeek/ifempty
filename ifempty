@@ -30,6 +30,8 @@ image_or_device() {
 
 readme() {
     cat <<'EOF'
+About --
+
 This is a data protection wrapper for mkfs.X tools. Generally speaking, it can
 be used with any tool of calling signature 'tool [options] target' where the
 target is either a block device or some raw image file.
@@ -59,7 +61,7 @@ Setup --
 - check if /usr/local/sbin is in your PATH and overrides /usr/sbin
 - in /usr/local/sbin symlink names of "dumb" tools to /usr/local/bin/ifempty
 
-For example:
+Example --
 
 > tree /usr/local/sbin
 /usr/local/sbin
