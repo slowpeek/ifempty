@@ -121,8 +121,11 @@ image_or_device "$last" ||
 [[ -r "$last" ]] ||
     bye "'${last}' is not readable, try running with sudo"
 
-blkid=$(blkid -o export -- "$last") ||
-    bye "blkid cant recognize '${last}'"
+_st=0
+blkid=$(blkid -o export -- "$last") || _st=$?
+
+# 2 = nothing found
+[[ $_st == @(0|2) ]] || bye "blkid exit code '$_st'"
 
 msg=
 while IFS='=' read -r key val; do
