@@ -116,6 +116,9 @@ image_or_device "$last" ||
 [[ -r "$last" ]] ||
     bye "'${last}' is not readable, try running with sudo"
 
+blkid=$(blkid -o export "$last") ||
+    bye "blkid cant recognize '${last}'"
+
 msg=
 while IFS='=' read -r key val; do
     case $key in
@@ -127,7 +130,7 @@ while IFS='=' read -r key val; do
             msg="'${last}' contains some ${val^^} superblock"
             break ;;
     esac
-done < <(blkid -o export "$last")
+done <<< "$blkid"
 
 if [[ -n $msg ]]; then
     printf '%s\n' "$msg"
