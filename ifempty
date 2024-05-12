@@ -30,7 +30,6 @@ image_or_device() {
 
 readme() {
     cat <<'EOF'
-
 This is a data protection wrapper for mkfs.X tools. Generally speaking, it can
 be used with any tool of calling signature 'tool [options] target' where the
 target is either a block device or some raw image file.
@@ -73,12 +72,13 @@ For example:
 
 Check what would the shell start when one runs mkfs.fat:
 
-> type mkfs.fat
-mkfs.fat is /usr/local/sbin/mkfs.fat
+> command -v mkfs.fat
+/usr/local/sbin/mkfs.fat
 
 So, with such setup, running mkfs.fat would start ifempty which checks the
 target before passing control to the original tool.
 
+Homepage https://github.com/slowpeek/ifempty
 EOF
 
     exit
