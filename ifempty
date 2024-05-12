@@ -49,7 +49,7 @@ This script makes those "dumb" tools safer to use by emulating the "smart"
 behavior.
 
 ==> Notice: Some mkfs.X tools accept an extra non-option argument: filesystem
-size. This script does not support that, it assumes the last agrument is the
+size. This script does not support that, it assumes the last argument is the
 target.
 
 ==> Notice: Some mkfs.X tools can create the fs starting at some offset
