@@ -46,6 +46,14 @@ refuse to proceed (e.g. mkfs.xfs).
 This script makes those "dumb" tools safer to use by emulating the "smart"
 behavior.
 
+==> Notice: Some mkfs.X tools accept an extra non-option argument: filesystem
+size. This script does not support that, it assumes the last agrument is the
+target.
+
+==> Notice: Some mkfs.X tools can create the fs starting at some offset
+(e.g. mkfs.fat with its --offset option). This script does not parse any
+options, it just assumes the last argument is the target as-is.
+
 Setup --
 
 - save the script as /usr/local/bin/ifempty and make it executable
@@ -70,11 +78,6 @@ mkfs.fat is /usr/local/sbin/mkfs.fat
 
 So, with such setup, running mkfs.fat would start ifempty which checks the
 target before passing control to the original tool.
-
-Notice --
-
-Some mkfs.X tools accept one extra non-option argument: filesystem size. This
-script does not support that, it assumes the last agrument is the target.
 
 EOF
 
