@@ -105,6 +105,11 @@ done < <(type -a -p "$name")
 
 (( $# )) || readme
 
+# Pass control to the original tool right away when started with just one
+# argument and it looks like an option. This is for stuff like -h, --help, -V,
+# --version
+! [[ $# == 1 && $1 == -* ]] || exec "$tool" "$@"
+
 last=${*: -1}
 
 [[ -e "$last" ]] ||
