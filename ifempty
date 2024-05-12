@@ -34,7 +34,8 @@ About --
 
 This is a data protection wrapper for mkfs.X tools. Generally speaking, it can
 be used with any tool of calling signature 'tool [options] target' where the
-target is either a block device or some raw image file.
+target is either a block device or some raw image file (accepted filename
+extensions: bin, disk, img, part, raw).
 
 Among mkfs.X tools there are "smart" and "dumb" ones.
 
