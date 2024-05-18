@@ -1,20 +1,25 @@
 * About
 
 This is a data protection wrapper for =mkfs.X= tools. Generally speaking, it can
-be used with any tool of calling signature =tool [options] target= where the
+be used with any tool of calling signature =tool [options] target=, where the
 target is either a block device or some raw image file (accepted filename
 extensions: =bin=, =disk=, =img=, =part=, =raw=).
 
 Among =mkfs.X= tools there are /smart/ and /dumb/ ones.
 
 /Smart/ tools check if the target contains something before doing anything. In
-the case, some tools ask for confirmation (e.g. =mkfs.ext= family), while others
-refuse to proceed (e.g. =mkfs.xfs=).
+the case, some tools ask for confirmation (e.g. the =mkfs.ext= family), while
+others refuse to proceed (e.g. =mkfs.xfs=).
 
 /Dumb/ tools just format the target without any checks (e.g. =mkfs.fat=).
 
 This script makes those /dumb/ tools safer to use by emulating the /smart/
-behavior.
+behavior. It relies on =libblk= for the check, just like the =mkfs.ext= family
+does.
+
+*Notice*: The /smart/ behaviour is only emulated when you run the script on a
+terminal. The =mkfs.ext= family does the same to not /break existing scripts/
+(quoted from mke2fs.c).
 
 *Notice*: Some =mkfs.X= tools accept an extra non-option argument: filesystem
 size. This script does not support that, it assumes the last argument is the
@@ -26,11 +31,20 @@ options, it just assumes the last argument is the target as-is.
 
 * Setup
 
+There are two ways to use the script:
+- /standalone/ mode: when called as =ifempty tool ..=. It is easier to install
+  but you have to manually prepend =ifempty= each time
+- /symlink/ mode: when you override your tools with symlinks to =ifempty= and
+  call them like you always do with just =tool ..=
+
+In any case:
 - save the script as =/usr/local/bin/ifempty= and make it executable
+
+Extra steps for the /symlink/ mode:
 - check if =/usr/local/sbin= is in your =PATH= and overrides =/usr/sbin=
 - in =/usr/local/sbin= symlink names of /dumb/ tools to =/usr/local/bin/ifempty=
 
-* Example
+* Example for the symlink mode
 
 #+begin_example
   > tree /usr/local/sbin

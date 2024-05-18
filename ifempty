@@ -6,9 +6,6 @@
 
 set -eu
 
-self=${BASH_SOURCE[0]}
-name=${self##*/}
-
 bye() {
     printf 'ifempty: %s\n' "$1" >&2
     exit 1
@@ -33,36 +30,48 @@ readme() {
 About --
 
 This is a data protection wrapper for mkfs.X tools. Generally speaking, it can
-be used with any tool of calling signature 'tool [options] target' where the
+be used with any tool of calling signature 'tool [options] target', where the
 target is either a block device or some raw image file (accepted filename
 extensions: bin, disk, img, part, raw).
 
 Among mkfs.X tools there are "smart" and "dumb" ones.
 
 "Smart" tools check if the target contains something before doing anything. In
-the case, some tools ask for confirmation (e.g. mkfs.ext family), while others
-refuse to proceed (e.g. mkfs.xfs).
+the case, some tools ask for confirmation (e.g. the mkfs.ext family), while
+others refuse to proceed (e.g. mkfs.xfs).
 
 "Dumb" tools just format the target without any checks (e.g. mkfs.fat).
 
 This script makes those "dumb" tools safer to use by emulating the "smart"
-behavior.
+behavior. It relies on libblk for the check, just like the mkfs.ext family does.
 
-==> Notice: Some mkfs.X tools accept an extra non-option argument: filesystem
-size. This script does not support that, it assumes the last argument is the
-target.
+==> The "smart" behaviour is only emulated when you run the script on a
+terminal. The mkfs.ext family does the same to not "break existing scripts"
+(quoted from mke2fs.c).
 
-==> Notice: Some mkfs.X tools can create the fs starting at some offset
-(e.g. mkfs.fat with its --offset option). This script does not parse any
-options, it just assumes the last argument is the target as-is.
+==> Some mkfs.X tools accept an extra non-option argument: filesystem size. This
+script does not support that, it assumes the last argument is the target.
+
+==> Some mkfs.X tools can create the fs starting at some offset (e.g. mkfs.fat
+with its --offset option). This script does not parse any options, it just
+assumes the last argument is the target as-is.
 
 Setup --
 
+There are two ways to use the script:
+- standalone mode: when called as `ifempty tool ..`. It is easier to install but
+  you have to manually prepend 'ifempty' each time
+- symlink mode: when you override your tools with symlinks to ifempty and call
+  them like you always do with just `tool ..`
+
+In any case:
 - save the script as /usr/local/bin/ifempty and make it executable
+
+Extra steps for the symlink mode:
 - check if /usr/local/sbin is in your PATH and overrides /usr/sbin
 - in /usr/local/sbin symlink names of "dumb" tools to /usr/local/bin/ifempty
 
-Example --
+Example for the symlink mode --
 
 > tree /usr/local/sbin
 /usr/local/sbin
@@ -87,25 +96,73 @@ EOF
     exit
 }
 
-tool=
-while read -r path; do
-    if [[ $self -ef $path ]]; then
-        # Skip this script
-        continue
+self=${BASH_SOURCE[0]}
+name=${self##*/}
+
+# By default, assume 'ifempty tool ..' mode
+standalone=y
+
+# If the script was called by a symlink, check for the symlink mode
+if [[ -L $self ]]; then
+    # Resolve the symlink
+    self_real=$(realpath "$self")
+    name_real=${self_real##*/}
+
+    # If the target name differs from the link name, it is the symlink mode
+    [[ $name == "$name_real" ]] || standalone=n
+fi
+
+if [[ $standalone == y ]]; then
+    # When the whole command is 'ifempty', show the script's readme
+    (( $# )) || readme
+
+    hint=
+    if [[ $1 == */* ]]; then
+        [[ -e $1 ]] || bye "'$1' does not exist"
+        [[ -f $1 ]] || bye "'$1' is not a regular file"
+        [[ -x $1 ]] || bye "'$1' is not executable"
+
+        tool=$1
+    else
+        tool=$(type -P -- "$1") ||
+            bye "Cant find '${1}' executable in PATH"
+
+        hint='command'
     fi
 
-    tool=$path
-    break
-done < <(type -a -p "$name")
+    if [[ $self -ef $tool ]]; then
+        [[ $name == "${tool##*/}" ]] ||
+            bye "'$1'${hint:+ $hint} is a symlink to ifempty, you should call it directly"
 
-[[ -n $tool ]] ||
-    bye "Cant find other '${name}' executable in PATH"
+        bye 'There is no need to wrap ifempty into itself'
+    fi
 
-# Pass control to the original tool right away when not on a terminal. This idea
-# is borrowed from mkfs.ext family, which skips the target check on a terminal
+    shift
+    # When the whole command is 'ifempty tool', pass control to the tool
+    (( $# )) || exec "$tool"
+else
+    tool=
+    while read -r path; do
+        if [[ $self -ef $path ]]; then
+            # Skip this script
+            continue
+        fi
+
+        tool=$path
+        break
+    done < <(type -a -p "$name")
+
+    [[ -n $tool ]] ||
+        bye "Cant find other '${name}' executable in PATH"
+fi
+
+# Pass control to the original tool right away when NOT on a terminal. This idea
+# is borrowed from the mkfs.ext family, which skips the target check in the case
 # (search for "isatty(0)" in mke2fs.c)
 [[ -t 0 && -t 1 ]] || exec "$tool" "$@"
 
+# Show the script's readme in symlink mode with no args (reaching here with no
+# args means it is the symlink mode)
 (( $# )) || readme
 
 # Pass control to the original tool right away when started with just one
