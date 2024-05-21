@@ -69,7 +69,8 @@ In any case:
 
 Extra steps for the symlink mode:
 - check if /usr/local/sbin is in your PATH and overrides /usr/sbin
-- in /usr/local/sbin symlink names of "dumb" tools to /usr/local/bin/ifempty
+- in /usr/local/sbin, create symlinks for the "dumb" tools, pointing to
+  /usr/local/bin/ifempty
 
 Example for the symlink mode --
 
