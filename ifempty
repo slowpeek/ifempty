@@ -72,6 +72,15 @@ Extra steps for the symlink mode:
 - in /usr/local/sbin, create symlinks for the "dumb" tools, pointing to
   /usr/local/bin/ifempty
 
+Example for the standalone mode --
+
+> ifempty mkfs.fat disk.img
+'disk.img' contains some GPT partition table
+Proceed anyway? (y,N) n
+> ifempty mkfs.fat part1.img
+'part1.img' contains some XFS superblock
+Proceed anyway? (y,N) n
+
 Example for the symlink mode --
 
 > tree /usr/local/sbin
@@ -79,17 +88,17 @@ Example for the symlink mode --
 ├── mkfs.exfat -> /usr/local/bin/ifempty
 ├── mkfs.fat -> /usr/local/bin/ifempty
 ├── mkfs.msdos -> /usr/local/bin/ifempty
-├── mkfs.ntfs -> /usr/local/bin/ifempty
-├── mkfs.udf -> /usr/local/bin/ifempty
 └── mkfs.vfat -> /usr/local/bin/ifempty
-
-Check what would the shell start when one runs mkfs.fat:
 
 > command -v mkfs.fat
 /usr/local/sbin/mkfs.fat
 
-So, with such setup, running mkfs.fat would start ifempty which checks the
-target before passing control to the original tool.
+> mkfs.fat disk.img
+'disk.img' contains some GPT partition table
+Proceed anyway? (y,N) n
+> mkfs.fat part1.img
+'part1.img' contains some XFS superblock
+Proceed anyway? (y,N) n
 
 Homepage https://github.com/slowpeek/ifempty
 EOF
