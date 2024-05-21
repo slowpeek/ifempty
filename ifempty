@@ -202,8 +202,8 @@ while IFS='=' read -r key val; do
 done <<< "$blkid"
 
 if [[ -n $msg ]]; then
-    printf '%s\n' "$msg"
-    read -r -p 'Proceed anyway? (y,N) ' yn
+    printf '%s\nProceed anyway? (y,N) ' "$msg"
+    read -r yn
     [[ ${yn,,} == y ]] || exit 1
 fi
 
