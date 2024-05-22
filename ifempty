@@ -182,14 +182,9 @@ fi
 
 last=${*: -1}
 
-[[ -e "$last" ]] ||
-    bye "'${last}' does not exist"
-
-image_or_device "$last" ||
-    bye "'${last}' is not a block device or some raw image file"
-
-[[ -r "$last" ]] ||
-    bye "'${last}' is not readable, try running with sudo"
+[[ -e "$last" ]] || bye "'${last}' does not exist"
+image_or_device "$last" || bye "'${last}' is not a block device or some raw image file"
+[[ -r "$last" ]] || bye "'${last}' is not readable, try running with sudo"
 
 _st=0
 blkid=$(blkid -o export -- "$last") || _st=$?
